@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP, MOVEMENT & RIVALS HUB (V10)
+-- ZERTZ ESP, MOVEMENT & RIVALS HUB (ULTIMATE V11)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -17,14 +18,12 @@ if not LocalPlayer.Character then
 end
 
 -- ═══ STATE CONFIG ═══
--- Visuals State
 local espEnabled = false
 local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
 local teamCheckEnabled = false
 
--- Movement State
 local speedEnabled = false
 local speedValue = 32
 local infJumpEnabled = false
@@ -32,10 +31,7 @@ local spinbotEnabled = false
 local flyEnabled = false
 local flySpeed = 50
 
--- Rivals State
 local killEffectsEnabled = false
-
--- Settings State
 local toggleKey = Enum.KeyCode.K
 local waitingForKey = false
 
@@ -121,6 +117,22 @@ local function removeESP(target)
 end
 
 -- ═══ RIVALS FEATURES ═══
+local function unlockAllSkins()
+    pcall(function()
+        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local n = string.lower(obj.Name)
+                if n:find("unlock") or n:find("purchase") or n:find("skin") or n:find("wrap") or n:find("cosmetic") then
+                    pcall(function()
+                        obj:FireServer("All")
+                        obj:FireServer(true)
+                    end)
+                end
+            end
+        end
+    end)
+end
+
 local function randomizeWeaponSkins()
     pcall(function()
         local weaponModels = LocalPlayer.PlayerScripts.Assets.ViewModels.Weapons:GetChildren()
@@ -188,7 +200,7 @@ local function updateSpeedState(v)
     end
 end
 
--- ═══ RENDER LOOP (RIVALS-FIXED FEET-TO-HEAD BOX) ═══
+-- ═══ RENDER LOOP ═══
 connections.render = RunService.RenderStepped:Connect(function()
     local viewportSize = Camera.ViewportSize
     local bottomCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
@@ -274,9 +286,9 @@ end)
 
 connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) end)
 
--- ═══ UI CREATION (APOLLO STYLE HUB) ═══
+-- ═══ GOD-TIER UI CREATION ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESP_ApolloHubV10"
+ScreenGui.Name = "ZertzESP_UltimateV11"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -308,12 +320,12 @@ local function makeDraggable(guiObject, dragHandle)
     end)
 end
 
--- Floating Open Button
+-- Floating Open Button with Animated Hover
 local OpenButton = Instance.new("TextButton")
 OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 44, 0, 44)
+OpenButton.Size = UDim2.new(0, 46, 0, 46)
 OpenButton.Position = UDim2.new(0, 20, 0, 160)
-OpenButton.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
+OpenButton.BackgroundColor3 = Color3.fromRGB(10, 14, 22)
 OpenButton.TextColor3 = Color3.fromRGB(0, 190, 255)
 OpenButton.TextSize = 18
 OpenButton.Font = Enum.Font.GothamBold
@@ -321,21 +333,21 @@ OpenButton.Text = "Z"
 OpenButton.Parent = ScreenGui
 
 local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 10)
+OpenCorner.CornerRadius = UDim.new(0, 12)
 OpenCorner.Parent = OpenButton
 
 local OpenStroke = Instance.new("UIStroke")
-OpenStroke.Color = Color3.fromRGB(35, 55, 90)
-OpenStroke.Thickness = 1.2
+OpenStroke.Color = Color3.fromRGB(0, 140, 255)
+OpenStroke.Thickness = 1.5
 OpenStroke.Parent = OpenButton
 
 makeDraggable(OpenButton)
 
--- Main Container Frame
+-- Main Frame Container
 local MainContainer = Instance.new("CanvasGroup")
 MainContainer.Name = "MainContainer"
-MainContainer.Size = UDim2.new(0, 400, 0, 430)
-MainContainer.Position = UDim2.new(0.5, -200, 0.5, -215)
+MainContainer.Size = UDim2.new(0, 410, 0, 440)
+MainContainer.Position = UDim2.new(0.5, -205, 0.5, -220)
 MainContainer.BackgroundTransparency = 1
 MainContainer.GroupTransparency = 0
 MainContainer.Visible = true
@@ -343,34 +355,34 @@ MainContainer.Parent = ScreenGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(1, 0, 1, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(9, 12, 18)
+MainFrame.BackgroundColor3 = Color3.fromRGB(8, 11, 16)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = MainContainer
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(30, 45, 75)
-MainStroke.Thickness = 1.2
+MainStroke.Color = Color3.fromRGB(28, 42, 68)
+MainStroke.Thickness = 1.5
 MainStroke.Parent = MainContainer
 
 -- Top Bar Header
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+TopBar.Size = UDim2.new(1, 0, 0, 46)
+TopBar.BackgroundColor3 = Color3.fromRGB(12, 16, 24)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
 local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 12)
+TopCorner.CornerRadius = UDim.new(0, 14)
 TopCorner.Parent = TopBar
 
 local TopCover = Instance.new("Frame")
 TopCover.Size = UDim2.new(1, 0, 0, 10)
 TopCover.Position = UDim2.new(0, 0, 1, -10)
-TopCover.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+TopCover.BackgroundColor3 = Color3.fromRGB(12, 16, 24)
 TopCover.BorderSizePixel = 0
 TopCover.Parent = TopBar
 
@@ -381,7 +393,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.TextColor3 = Color3.fromRGB(245, 248, 255)
 TitleLabel.TextSize = 14
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "ZERTZ  //  RIVALS & ESP HUB"
+TitleLabel.Text = "ZERTZ  //  ULTIMATE HUB"
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
@@ -391,7 +403,7 @@ makeDraggable(MainContainer, TopBar)
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, -24, 0, 36)
 TabBar.Position = UDim2.new(0, 12, 0, 54)
-TabBar.BackgroundColor3 = Color3.fromRGB(11, 15, 23)
+TabBar.BackgroundColor3 = Color3.fromRGB(10, 14, 20)
 TabBar.Parent = MainFrame
 
 local TabBarCorner = Instance.new("UICorner")
@@ -399,7 +411,7 @@ TabBarCorner.CornerRadius = UDim.new(0, 8)
 TabBarCorner.Parent = TabBar
 
 local TabBarStroke = Instance.new("UIStroke")
-TabBarStroke.Color = Color3.fromRGB(22, 33, 54)
+TabBarStroke.Color = Color3.fromRGB(20, 30, 48)
 TabBarStroke.Thickness = 1
 TabBarStroke.Parent = TabBar
 
@@ -408,6 +420,14 @@ TabListLayout.FillDirection = Enum.FillDirection.Horizontal
 TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TabListLayout.Padding = UDim.new(0, 0)
 TabListLayout.Parent = TabBar
+
+-- Sliding Active Tab Line Indicator
+local ActiveTabIndicator = Instance.new("Frame")
+ActiveTabIndicator.Size = UDim2.new(0.25, 0, 0, 2)
+ActiveTabIndicator.Position = UDim2.new(0, 0, 1, -2)
+ActiveTabIndicator.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+ActiveTabIndicator.BorderSizePixel = 0
+ActiveTabIndicator.Parent = TabBar
 
 -- Pages Container
 local PagesContainer = Instance.new("Frame")
@@ -440,7 +460,7 @@ local RivalsPage = Instance.new("ScrollingFrame")
 RivalsPage.Size = UDim2.new(1, 0, 1, 0)
 RivalsPage.BackgroundTransparency = 1
 RivalsPage.BorderSizePixel = 0
-RivalsPage.CanvasSize = UDim2.new(0, 0, 0, 300)
+RivalsPage.CanvasSize = UDim2.new(0, 0, 0, 340)
 RivalsPage.ScrollBarThickness = 2
 RivalsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 150, 255)
 RivalsPage.Visible = false
@@ -468,7 +488,8 @@ createPageLayout(MovementPage)
 createPageLayout(RivalsPage)
 createPageLayout(SettingsPage)
 
--- Tab Switcher Builder (4 Tabs)
+-- Tab Switcher Builder with Sliding Line Animation
+local tabIndexMap = {Visuals = 0, Movement = 1, Rivals = 2, Settings = 3}
 local function createTabButton(name, targetPage)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.25, 0, 1, 0)
@@ -486,6 +507,9 @@ local function createTabButton(name, targetPage)
         SettingsPage.Visible = false
         targetPage.Visible = true
         
+        local idx = tabIndexMap[name] or 0
+        TweenService:Create(ActiveTabIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(idx * 0.25, 0, 1, -2)}):Play()
+
         for _, child in ipairs(TabBar:GetChildren()) do
             if child:IsA("TextButton") then
                 TweenService:Create(child, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(130, 150, 180)}):Play()
@@ -503,13 +527,13 @@ createTabButton("Movement", MovementPage)
 createTabButton("Rivals", RivalsPage)
 createTabButton("Settings", SettingsPage)
 
--- UI Toggle
+-- UI Toggle Animation
 local uiVisible = true
 local function toggleUI()
     uiVisible = not uiVisible
     if uiVisible then
         MainContainer.Visible = true
-        TweenService:Create(MainContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
     else
         local tw = TweenService:Create(MainContainer, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
         tw:Play()
@@ -544,7 +568,7 @@ end)
 local function createToggle(parent, name, callback)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, 0, 0, 38)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(12, 16, 24)
     toggleBtn.Text = ""
     toggleBtn.AutoButtonColor = false
     toggleBtn.Parent = parent
@@ -554,7 +578,7 @@ local function createToggle(parent, name, callback)
     corner.Parent = toggleBtn
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(22, 31, 48)
+    stroke.Color = Color3.fromRGB(20, 28, 44)
     stroke.Thickness = 1
     stroke.Parent = toggleBtn
 
@@ -572,7 +596,7 @@ local function createToggle(parent, name, callback)
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 36, 0, 18)
     switchBg.Position = UDim2.new(1, -46, 0.5, -9)
-    switchBg.BackgroundColor3 = Color3.fromRGB(22, 30, 46)
+    switchBg.BackgroundColor3 = Color3.fromRGB(20, 28, 42)
     switchBg.BorderSizePixel = 0
     switchBg.Parent = toggleBtn
 
@@ -583,7 +607,7 @@ local function createToggle(parent, name, callback)
     local switchKnob = Instance.new("Frame")
     switchKnob.Size = UDim2.new(0, 14, 0, 14)
     switchKnob.Position = UDim2.new(0, 2, 0.5, -7)
-    switchKnob.BackgroundColor3 = Color3.fromRGB(120, 140, 170)
+    switchKnob.BackgroundColor3 = Color3.fromRGB(110, 130, 160)
     switchKnob.BorderSizePixel = 0
     switchKnob.Parent = switchBg
 
@@ -595,16 +619,16 @@ local function createToggle(parent, name, callback)
     toggleBtn.MouseButton1Click:Connect(function()
         state = not state
         if state then
-            TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 130, 255)}):Play()
-            TweenService:Create(switchKnob, TweenInfo.new(0.2), {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(12, 24, 44)}):Play()
-            stroke.Color = Color3.fromRGB(0, 110, 220)
+            TweenService:Create(switchBg, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(0, 140, 255)}):Play()
+            TweenService:Create(switchKnob, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(11, 22, 40)}):Play()
+            stroke.Color = Color3.fromRGB(0, 120, 230)
             label.TextColor3 = Color3.fromRGB(240, 245, 255)
         else
-            TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 30, 46)}):Play()
-            TweenService:Create(switchKnob, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(120, 140, 170)}):Play()
-            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(13, 17, 26)}):Play()
-            stroke.Color = Color3.fromRGB(22, 31, 48)
+            TweenService:Create(switchBg, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(20, 28, 42)}):Play()
+            TweenService:Create(switchKnob, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(110, 130, 160)}):Play()
+            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(12, 16, 24)}):Play()
+            stroke.Color = Color3.fromRGB(20, 28, 44)
             label.TextColor3 = Color3.fromRGB(175, 195, 220)
         end
         callback(state)
@@ -614,7 +638,7 @@ end
 local function createInputSlider(parent, title, defaultVal, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 38)
-    frame.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+    frame.BackgroundColor3 = Color3.fromRGB(12, 16, 24)
     frame.Parent = parent
 
     local corner = Instance.new("UICorner")
@@ -622,7 +646,7 @@ local function createInputSlider(parent, title, defaultVal, callback)
     corner.Parent = frame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(22, 31, 48)
+    stroke.Color = Color3.fromRGB(20, 28, 44)
     stroke.Thickness = 1
     stroke.Parent = frame
 
@@ -640,7 +664,7 @@ local function createInputSlider(parent, title, defaultVal, callback)
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(0, 54, 0, 24)
     box.Position = UDim2.new(1, -62, 0.5, -12)
-    box.BackgroundColor3 = Color3.fromRGB(8, 11, 17)
+    box.BackgroundColor3 = Color3.fromRGB(7, 10, 15)
     box.TextColor3 = Color3.fromRGB(0, 170, 255)
     box.TextSize = 12
     box.Font = Enum.Font.GothamBold
@@ -691,7 +715,7 @@ local function createButtonWithSubtext(parent, mainText, subtext, color, callbac
     corner.Parent = container
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 130, 255)
+    stroke.Color = Color3.fromRGB(0, 140, 255)
     stroke.Thickness = 1
     stroke.Parent = container
 
@@ -799,7 +823,7 @@ createInputSlider(MovementPage, "Fly Speed", 50, function(v)
     flySpeed = v
 end)
 
--- Rivals Tab (Warning, standard options first, then External Loader at the very bottom)
+-- Rivals Tab
 local warningLabel = Instance.new("TextLabel")
 warningLabel.Size = UDim2.new(1, 0, 0, 36)
 warningLabel.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
@@ -827,7 +851,11 @@ createButton(RivalsPage, "Randomize Weapon Skins", Color3.fromRGB(16, 26, 45), f
     randomizeWeaponSkins()
 end)
 
--- Load External UI at the very bottom as a last resort option
+createButton(RivalsPage, "Unlock All Skins & Cosmetics", Color3.fromRGB(16, 26, 45), function()
+    unlockAllSkins()
+end)
+
+-- Load External UI at bottom
 createButtonWithSubtext(
     RivalsPage,
     "LOAD EXTERNAL UI",
@@ -874,4 +902,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP V10 Loaded Successfully!")
+print("ZERTZ ESP V11 Loaded Successfully!")
