@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP - Custom Dark Blue UI (Moondiety Style)
+-- ZERTZ ESP - Advanced Custom UI (V3 Moondiety Style)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -7,6 +7,7 @@ if _G.HubCleanup then _G.HubCleanup() end
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -20,6 +21,9 @@ local espEnabled = false
 local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
+local teamCheckEnabled = false
+local toggleKey = Enum.KeyCode.K
+local waitingForKey = false
 
 local colorPresets = {
     Color3.fromRGB(0, 150, 255),  -- Electric Blue
@@ -46,7 +50,9 @@ end
 local function isValidTarget(p)
     if p == LocalPlayer then return false end
     if not isAlive(p) then return false end
-    if p.Team and LocalPlayer.Team and p.Team == LocalPlayer.Team then return false end
+    if teamCheckEnabled and p.Team and LocalPlayer.Team and p.Team == LocalPlayer.Team then 
+        return false 
+    end
     return true
 end
 
@@ -100,7 +106,7 @@ local function removeESP(target)
     end
 end
 
--- ═══ RENDER LOOP ═══
+-- ═══ RENDER LOOP (FIXED 8-CORNER PERSPECTIVE BOX) ═══
 connections.render = RunService.RenderStepped:Connect(function()
     local viewportSize = Camera.ViewportSize
     local bottomCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
@@ -123,20 +129,40 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
-                        -- Box ESP (Feet to Head)
+                        -- 8-Corner Bounding Box Calculation (Fixes perspective warping bug entirely)
                         if boxEnabled and espEnabled then
-                            local headWorld = rootPart.Position + Vector3.new(0, 2.5, 0)
-                            local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
+                            local cf, size = char:GetBoundingBox()
+                            local corners = {
+                                cf * CFrame.new(size.X/2, size.Y/2, size.Z/2),
+                                cf * CFrame.new(-size.X/2, size.Y/2, size.Z/2),
+                                cf * CFrame.new(size.X/2, -size.Y/2, size.Z/2),
+                                cf * CFrame.new(-size.X/2, -size.Y/2, size.Z/2),
+                                cf * CFrame.new(size.X/2, size.Y/2, -size.Z/2),
+                                cf * CFrame.new(-size.X/2, size.Y/2, -size.Z/2),
+                                cf * CFrame.new(size.X/2, -size.Y/2, -size.Z/2),
+                                cf * CFrame.new(-size.X/2, -size.Y/2, -size.Z/2),
+                            }
                             
-                            local headScreen = Camera:WorldToViewportPoint(headWorld)
-                            local feetScreen = Camera:WorldToViewportPoint(feetWorld)
+                            local minX, minY = math.huge, math.huge
+                            local maxX, maxY = -math.huge, -math.huge
+                            local boxVisible = true
                             
-                            local height = math.abs(headScreen.Y - feetScreen.Y)
-                            local width = height / 1.5
+                            for _, corner in ipairs(corners) do
+                                local cPos, cOnScreen = Camera:WorldToViewportPoint(corner.Position)
+                                if not cOnScreen then boxVisible = false end
+                                minX = math.min(minX, cPos.X)
+                                minY = math.min(minY, cPos.Y)
+                                maxX = math.max(maxX, cPos.X)
+                                maxY = math.max(maxY, cPos.Y)
+                            end
                             
-                            data.Box.Size = Vector2.new(width, height)
-                            data.Box.Position = Vector2.new(headScreen.X - (width / 2), headScreen.Y)
-                            data.Box.Visible = true
+                            if boxVisible then
+                                data.Box.Size = Vector2.new(maxX - minX, maxY - minY)
+                                data.Box.Position = Vector2.new(minX, minY)
+                                data.Box.Visible = true
+                            else
+                                data.Box.Visible = false
+                            end
                         else
                             data.Box.Visible = false
                         end
@@ -187,15 +213,15 @@ end)
 
 connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) end)
 
--- ═══ UI CREATION (MOONDIETY THEME & STRUCTURE) ═══
+-- ═══ UI CREATION (ANIMATED MOONDIETY THEME) ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESP_Moondiety"
+ScreenGui.Name = "ZertzESP_Animated"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
--- Draggable Helper Function
+-- Draggable Helper
 local function makeDraggable(guiObject, dragHandle)
     dragHandle = dragHandle or guiObject
     local dragging, dragStart, startPos
@@ -245,15 +271,21 @@ OpenStroke.Parent = OpenButton
 
 makeDraggable(OpenButton)
 
--- Main Window Frame
+-- Main CanvasGroup (Enables Smooth Fade Animations)
+local MainContainer = Instance.new("CanvasGroup")
+MainContainer.Name = "MainContainer"
+MainContainer.Size = UDim2.new(0, 340, 0, 390)
+MainContainer.Position = UDim2.new(0.5, -170, 0.5, -195)
+MainContainer.BackgroundTransparency = 1
+MainContainer.GroupTransparency = 0
+MainContainer.Visible = true
+MainContainer.Parent = ScreenGui
+
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 340, 0, 390)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -195)
+MainFrame.Size = UDim2.new(1, 0, 1, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 20)
 MainFrame.BorderSizePixel = 0
-MainFrame.Visible = true
-MainFrame.Parent = ScreenGui
+MainFrame.Parent = MainContainer
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -266,7 +298,6 @@ MainStroke.Parent = MainFrame
 
 -- Top Bar Header
 local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 42)
 TopBar.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
 TopBar.BorderSizePixel = 0
@@ -294,9 +325,9 @@ TitleLabel.Text = "ZERTZ ESP HUB"
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
-makeDraggable(MainFrame, TopBar)
+makeDraggable(MainContainer, TopBar)
 
--- Tab Buttons Container (Visuals & Settings)
+-- Tab Bar
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, -20, 0, 35)
 TabBar.Position = UDim2.new(0, 10, 0, 50)
@@ -309,7 +340,7 @@ TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 TabListLayout.Padding = UDim.new(0, 10)
 TabListLayout.Parent = TabBar
 
--- Content Pages Container
+-- Pages Container
 local PagesContainer = Instance.new("Frame")
 PagesContainer.Size = UDim2.new(1, -20, 1, -100)
 PagesContainer.Position = UDim2.new(0, 10, 0, 92)
@@ -320,7 +351,7 @@ local VisualsPage = Instance.new("ScrollingFrame")
 VisualsPage.Size = UDim2.new(1, 0, 1, 0)
 VisualsPage.BackgroundTransparency = 1
 VisualsPage.BorderSizePixel = 0
-VisualsPage.CanvasSize = UDim2.new(0, 0, 0, 280)
+VisualsPage.CanvasSize = UDim2.new(0, 0, 0, 320)
 VisualsPage.ScrollBarThickness = 2
 VisualsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
 VisualsPage.Visible = true
@@ -330,7 +361,7 @@ local SettingsPage = Instance.new("ScrollingFrame")
 SettingsPage.Size = UDim2.new(1, 0, 1, 0)
 SettingsPage.BackgroundTransparency = 1
 SettingsPage.BorderSizePixel = 0
-SettingsPage.CanvasSize = UDim2.new(0, 0, 0, 280)
+SettingsPage.CanvasSize = UDim2.new(0, 0, 0, 320)
 SettingsPage.ScrollBarThickness = 2
 SettingsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
 SettingsPage.Visible = false
@@ -346,7 +377,7 @@ end
 createPageLayout(VisualsPage)
 createPageLayout(SettingsPage)
 
--- Tab Switching Functionality
+-- Tab Switching with Animations
 local function createTabButton(name, targetPage)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 145, 1, 0)
@@ -373,12 +404,10 @@ local function createTabButton(name, targetPage)
         
         for _, child in ipairs(TabBar:GetChildren()) do
             if child:IsA("TextButton") then
-                child.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
-                child.TextColor3 = Color3.fromRGB(160, 180, 205)
+                TweenService:Create(child, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(14, 22, 36), TextColor3 = Color3.fromRGB(160, 180, 205)}):Play()
             end
         end
-        btn.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 110, 220), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     end)
     
     return btn
@@ -389,7 +418,46 @@ tab1.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
 tab1.TextColor3 = Color3.fromRGB(255, 255, 255)
 createTabButton("Settings", SettingsPage)
 
--- Builder for Toggles
+-- UI Toggle Animation Function
+local uiVisible = true
+local function toggleUI()
+    uiVisible = not uiVisible
+    if uiVisible then
+        MainContainer.Visible = true
+        TweenService:Create(MainContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+    else
+        local tw = TweenService:Create(MainContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {GroupTransparency = 1})
+        tw:Play()
+        tw.Completed:Connect(function()
+            if not uiVisible then MainContainer.Visible = false end
+        end)
+    end
+end
+
+OpenButton.MouseButton1Click:Connect(toggleUI)
+
+-- Keyboard Toggle Listener (Editable Keybind)
+connections.keybind = UserInputService.InputBegan:Connect(function(input, gpe)
+    if waitingForKey then
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            toggleKey = input.KeyCode
+            waitingForKey = false
+            -- Find keybind button text and update it
+            for _, child in ipairs(SettingsPage:GetChildren()) do
+                if child:IsA("TextButton") and child.Name == "KeybindButton" then
+                    child.Text = "Toggle Menu Key: [" .. tostring(toggleKey.Name) .. "]"
+                end
+            end
+        end
+        return
+    end
+    
+    if not gpe and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == toggleKey then
+        toggleUI()
+    end
+end)
+
+-- Component Builders
 local function createToggle(parent, name, callback)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, 0, 0, 40)
@@ -433,12 +501,12 @@ local function createToggle(parent, name, callback)
     toggleBtn.MouseButton1Click:Connect(function()
         state = not state
         if state then
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(12, 30, 55)
+            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(12, 30, 55)}):Play()
             stroke.Color = Color3.fromRGB(0, 130, 255)
             statusDot.BackgroundColor3 = Color3.fromRGB(0, 210, 255)
             label.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(14, 20, 32)
+            TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(14, 20, 32)}):Play()
             stroke.Color = Color3.fromRGB(22, 32, 50)
             statusDot.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
             label.TextColor3 = Color3.fromRGB(180, 200, 225)
@@ -447,7 +515,6 @@ local function createToggle(parent, name, callback)
     end)
 end
 
--- Builder for Custom Buttons
 local function createButton(parent, name, color, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 40)
@@ -456,6 +523,7 @@ local function createButton(parent, name, color, callback)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
+    btn.Name = name == "Toggle Menu Key: [K]" and "KeybindButton" or "CustomBtn"
     btn.Parent = parent
     
     local corner = Instance.new("UICorner")
@@ -463,9 +531,10 @@ local function createButton(parent, name, color, callback)
     corner.Parent = btn
     
     btn.MouseButton1Click:Connect(callback)
+    return btn
 end
 
--- ═══ VISUALS TAB CONTROLS ═══
+-- ═══ POPULATE VISUALS TAB ═══
 createToggle(VisualsPage, "ESP Outline", function(v)
     espEnabled = v
     if not v then
@@ -490,6 +559,10 @@ createToggle(VisualsPage, "Distance Indicator", function(v)
     distanceEnabled = v
 end)
 
+createToggle(VisualsPage, "Team Check (Ignore Teammates)", function(v)
+    teamCheckEnabled = v
+end)
+
 createButton(VisualsPage, "Cycle Theme Color", Color3.fromRGB(18, 30, 52), function()
     currentColorIndex = (currentColorIndex % #colorPresets) + 1
     currentESPColor = colorPresets[currentColorIndex]
@@ -505,14 +578,16 @@ createButton(VisualsPage, "Cycle Theme Color", Color3.fromRGB(18, 30, 52), funct
     end
 end)
 
--- ═══ SETTINGS TAB CONTROLS ═══
--- Toggle to show/hide the floating mobile button
+-- ═══ POPULATE SETTINGS TAB ═══
 createToggle(SettingsPage, "Show Mobile Open Button", function(v)
     OpenButton.Visible = v
 end)
 
--- Default the mobile button toggle state to ON visually if wanted, or let user toggle it
--- (Note: You can add an initial click if you want it defaulted to ON)
+createButton(SettingsPage, "Toggle Menu Key: [K]", Color3.fromRGB(18, 30, 52), function()
+    waitingForKey = true
+    local btn = SettingsPage:FindFirstChild("KeybindButton")
+    if btn then btn.Text = "Press any key..." end
+end)
 
 createButton(SettingsPage, "Destroy UI & Exit", Color3.fromRGB(140, 30, 40), function()
     if _G.HubCleanup then
@@ -520,12 +595,7 @@ createButton(SettingsPage, "Destroy UI & Exit", Color3.fromRGB(140, 30, 40), fun
     end
 end)
 
--- Toggle Menu Visibility via Floating 'Z' Button
-OpenButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
-
--- Clean Exit Handler
+-- Cleanup Handler
 _G.HubCleanup = function()
     for _, c in pairs(connections) do
         if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
@@ -541,4 +611,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP Moondiety Theme Loaded Successfully!")
+print("ZERTZ ESP V3 (Animated & Keybind Editable) Loaded Successfully!")
