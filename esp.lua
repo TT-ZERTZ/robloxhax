@@ -1,31 +1,13 @@
 -- ============================================
--- ZERTZ ESP - Full ESP Suite (STABLE)
+-- ZERTZ ESP - Custom Dark Blue UI (Mobile & PC)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
 
--- Try multiple Rayfield sources
-local Rayfield = nil
-local success = false
-
-pcall(function()
-    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-    success = true
-end)
-
-if not success then
-    pcall(function()
-        Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
-        success = true
-    end)
-end
-
-if not success or not Rayfield then
-    Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua"))()
-end
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -38,12 +20,12 @@ local espEnabled = false
 local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
-local currentESPColor = Color3.fromRGB(255, 50, 50)
+local currentESPColor = Color3.fromRGB(0, 150, 255) -- Default vibrant blue
 
 local espObjects = {}
 local connections = {}
 
--- ═══ UTILITY ═══
+-- ═══ UTILITY FUNCTIONS ═══
 local function isAlive(p)
     local char = p and p.Character
     if not char then return false end
@@ -63,7 +45,6 @@ end
 local function createESP(target)
     if espObjects[target] then return end
     
-    -- Highlight (Outline)
     local highlight = Instance.new("Highlight")
     highlight.FillTransparency = 0.85
     highlight.OutlineTransparency = 0
@@ -71,7 +52,6 @@ local function createESP(target)
     highlight.OutlineColor = currentESPColor
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
-    -- 2D Box
     local box = Drawing.new("Square")
     box.Thickness = 1.5
     box.Filled = false
@@ -79,14 +59,12 @@ local function createESP(target)
     box.Transparency = 1
     box.Visible = false
 
-    -- Tracer Line
     local tracer = Drawing.new("Line")
     tracer.Thickness = 1
     tracer.Color = currentESPColor
     tracer.Transparency = 0.7
     tracer.Visible = false
     
-    -- Distance Text
     local text = Drawing.new("Text")
     text.Size = 13
     text.Center = true
@@ -127,20 +105,16 @@ connections.render = RunService.RenderStepped:Connect(function()
                 local rootPart = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
                 
                 if char and rootPart then
-                    -- Highlight Control
                     if espEnabled then
                         data.Highlight.Parent = char
                     else
                         data.Highlight.Parent = nil
                     end
                     
-                    -- Screen Position Check
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
-                        -- 2D Box Calculation (Fixed Feet to Head bounds)
                         if boxEnabled and espEnabled then
-                            -- World coordinates for Top of Head (+2.5 studs) and Feet (-3.5 studs)
                             local headWorld = rootPart.Position + Vector3.new(0, 2.5, 0)
                             local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
                             
@@ -150,7 +124,6 @@ connections.render = RunService.RenderStepped:Connect(function()
                             local height = math.abs(headScreen.Y - feetScreen.Y)
                             local width = height / 1.5
                             
-                            -- Position the Box precisely centered over the bounds
                             data.Box.Size = Vector2.new(width, height)
                             data.Box.Position = Vector2.new(headScreen.X - (width / 2), headScreen.Y)
                             data.Box.Visible = true
@@ -158,7 +131,6 @@ connections.render = RunService.RenderStepped:Connect(function()
                             data.Box.Visible = false
                         end
 
-                        -- Tracers (Points from bottom of screen to feet)
                         if tracersEnabled and espEnabled then
                             local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
                             local feetScreen = Camera:WorldToViewportPoint(feetWorld)
@@ -170,7 +142,6 @@ connections.render = RunService.RenderStepped:Connect(function()
                             data.Tracer.Visible = false
                         end
                         
-                        -- Distance Indicator
                         if distanceEnabled and espEnabled and LocalPlayer.Character then
                             local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                             if localRoot then
@@ -204,119 +175,204 @@ end)
 
 connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) end)
 
--- ═══ CREATE UI ═══
-local Window = nil
-local createSuccess = pcall(function()
-    Window = Rayfield:CreateWindow({
-        Name = "ZERTZ ESP",
-        LoadingTitle = "ZERTZ ESP",
-        LoadingSubtitle = "Initializing...",
-        Theme = "Default",
-        ConfigurationSaving = { Enabled = false },
-        Discord = { Enabled = false },
-        KeySystem = false
-    })
+-- ═══ CUSTOM UI CREATION (DARK BLUE & MOBILE FRIENDLY) ═══
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ZertzESPGui"
+ScreenGui.ResetOnSpawn = false
+pcall(function()
+    ScreenGui.Parent = CoreGui
 end)
-
-if not createSuccess or not Window then
-    error("Failed to create UI window")
-    return
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Visuals Tab
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
+-- Floating Mobile Open/Close Button
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.new(0, 50, 0, 50)
+OpenButton.Position = UDim2.new(0, 20, 0, 20)
+OpenButton.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
+OpenButton.BorderColor3 = Color3.fromRGB(0, 120, 255)
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 16
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Text = "Z"
+OpenButton.Parent = ScreenGui
 
-VisualsTab:CreateToggle({
-    Name = "ESP Outline",
-    CurrentValue = false,
-    Flag = "ESP",
-    Callback = function(v)
-        espEnabled = v
-        if not v then
-            for _, data in pairs(espObjects) do
-                if data.Highlight then data.Highlight.Parent = nil end
-                if data.Box then data.Box.Visible = false end
-                if data.Tracer then data.Tracer.Visible = false end
-                if data.Text then data.Text.Visible = false end
-            end
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0, 10)
+OpenCorner.Parent = OpenButton
+
+-- Main Window Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 320, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 18, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+-- Top Bar (Draggable for Mobile & PC)
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.BackgroundColor3 = Color3.fromRGB(18, 28, 48)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 12)
+TopCorner.Parent = TopBar
+
+-- Fix top corners rounding bottom of top bar
+local TopCover = Instance.new("Frame")
+TopCover.Size = UDim2.new(1, 0, 0, 10)
+TopCover.Position = UDim2.new(0, 0, 1, -10)
+TopCover.BackgroundColor3 = Color3.fromRGB(18, 28, 48)
+TopCover.BorderSizePixel = 0
+TopCover.Parent = TopBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -20, 1, 0)
+TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.TextColor3 = Color3.fromRGB(220, 240, 255)
+TitleLabel.TextSize = 15
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Text = "ZERTZ ESP"
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Container for toggles
+local ContentContainer = Instance.new("ScrollingFrame")
+ContentContainer.Size = UDim2.new(1, -20, 1, -55)
+ContentContainer.Position = UDim2.new(0, 10, 0, 48)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.BorderSizePixel = 0
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
+ContentContainer.ScrollBarThickness = 4
+ContentContainer.Parent = MainFrame
+
+local UIList = Instance.new("UIListLayout")
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Padding = UDim.new(0, 10)
+UIList.Parent = ContentContainer
+
+-- Helper function to create stylish Dark Blue Toggles
+local function createToggle(name, callback)
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(1, 0, 0, 42)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+    toggleBtn.TextColor3 = Color3.fromRGB(200, 220, 240)
+    toggleBtn.TextSize = 14
+    toggleBtn.Font = Enum.Font.GothamMedium
+    toggleBtn.Text = "  " .. name .. ": OFF"
+    toggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+    toggleBtn.Parent = ContentContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = toggleBtn
+    
+    local state = false
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
+            toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            toggleBtn.Text = "  " .. name .. ": ON"
+        else
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+            toggleBtn.TextColor3 = Color3.fromRGB(200, 220, 240)
+            toggleBtn.Text = "  " .. name .. ": OFF"
         end
-    end
-})
+        callback(state)
+    end)
+end
 
-VisualsTab:CreateToggle({
-    Name = "Box ESP",
-    CurrentValue = false,
-    Flag = "BoxESP",
-    Callback = function(v)
-        boxEnabled = v
-    end
-})
+-- Helper function for buttons (like Destroy)
+local function createButton(name, buttonColor, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 42)
+    btn.BackgroundColor3 = buttonColor
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 14
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.Parent = ContentContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+end
 
-VisualsTab:CreateToggle({
-    Name = "Tracers",
-    CurrentValue = false,
-    Flag = "Tracers",
-    Callback = function(v)
-        tracersEnabled = v
-    end
-})
-
-VisualsTab:CreateToggle({
-    Name = "Distance Indicator",
-    CurrentValue = false,
-    Flag = "Distance",
-    Callback = function(v)
-        distanceEnabled = v
-    end
-})
-
-VisualsTab:CreateColorPicker({
-    Name = "ESP Color Theme",
-    Color = Color3.fromRGB(255, 50, 50),
-    Flag = "Color",
-    Callback = function(v)
-        currentESPColor = v
+-- Build Controls
+createToggle("ESP Outline", function(v)
+    espEnabled = v
+    if not v then
         for _, data in pairs(espObjects) do
-            if data.Highlight then
-                data.Highlight.FillColor = v
-                data.Highlight.OutlineColor = v
+            if data.Highlight then data.Highlight.Parent = nil end
+            if data.Box then data.Box.Visible = false end
+            if data.Tracer then data.Tracer.Visible = false end
+            if data.Text then data.Text.Visible = false end
+        end
+    end
+end)
+
+createToggle("Box ESP", function(v)
+    boxEnabled = v
+end)
+
+createToggle("Tracers", function(v)
+    tracersEnabled = v
+end)
+
+createToggle("Distance Indicator", function(v)
+    distanceEnabled = v
+end)
+
+createButton("Destroy UI & Exit", Color3.fromRGB(180, 40, 40), function()
+    if _G.HubCleanup then
+        _G.HubCleanup()
+    end
+end)
+
+-- Toggle Menu Visibility via Floating Button
+OpenButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Make Window Draggable (Supports both Mobile Touch & Mouse)
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-            if data.Box then data.Box.Color = v end
-            if data.Tracer then data.Tracer.Color = v end
-            if data.Text then data.Text.Color = v end
-        end
+        end)
     end
-})
+end)
 
--- Settings Tab
-local SettingsTab = Window:CreateTab("Settings", 4483362458)
-
-SettingsTab:CreateKeybind({
-    Name = "Toggle Menu Keybind",
-    CurrentKeybind = "K",
-    HoldToInteract = false,
-    Flag = "UIKeybind",
-    Callback = function(Keybind)
-        -- Keybind change handler
-    end,
-})
-
-SettingsTab:CreateButton({
-    Name = "Destroy UI & Revert All",
-    Callback = function()
-        if _G.HubCleanup then
-            _G.HubCleanup()
-        end
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
-})
+end)
 
-Rayfield:Notify({
-   Title = "ZERTZ ESP Loaded!",
-   Content = "Box, Outline, Tracers & Distance active. Press 'K' to toggle menu.",
-   Duration = 5,
-})
-
--- Cleanup Function Definition
+-- Cleanup function definition
 _G.HubCleanup = function()
     for _, c in pairs(connections) do
         if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
@@ -326,8 +382,10 @@ _G.HubCleanup = function()
         removeESP(p)
     end
     espObjects = {}
-    if Rayfield and Rayfield.Destroy then
-        pcall(function() Rayfield:Destroy() end)
+    if ScreenGui then
+        ScreenGui:Destroy()
     end
     _G.HubCleanup = nil
 end
+
+print("ZERTZ ESP Custom UI Loaded Successfully!")
