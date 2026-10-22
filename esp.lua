@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP - Clean Visuals (STABLE)
+-- ZERTZ ESP - Full ESP Suite (STABLE)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -35,6 +35,7 @@ end
 
 -- ═══ STATE CONFIG ═══
 local espEnabled = false
+local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
 local currentESPColor = Color3.fromRGB(255, 50, 50)
@@ -70,6 +71,14 @@ local function createESP(target)
     highlight.OutlineColor = currentESPColor
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
+    -- 2D Box
+    local box = Drawing.new("Square")
+    box.Thickness = 1.5
+    box.Filled = false
+    box.Color = currentESPColor
+    box.Transparency = 1
+    box.Visible = false
+
     -- Tracer Line
     local tracer = Drawing.new("Line")
     tracer.Thickness = 1
@@ -87,6 +96,7 @@ local function createESP(target)
     
     espObjects[target] = {
         Highlight = highlight,
+        Box = box,
         Tracer = tracer,
         Text = text
     }
@@ -96,6 +106,7 @@ local function removeESP(target)
     local data = espObjects[target]
     if data then
         if data.Highlight then data.Highlight:Destroy() end
+        if data.Box then data.Box:Remove() end
         if data.Tracer then data.Tracer:Remove() end
         if data.Text then data.Text:Remove() end
         espObjects[target] = nil
@@ -116,7 +127,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                 local rootPart = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
                 
                 if char and rootPart then
-                    -- Highlight Toggle Control
+                    -- Highlight Control
                     if espEnabled then
                         data.Highlight.Parent = char
                     else
@@ -126,31 +137,57 @@ connections.render = RunService.RenderStepped:Connect(function()
                     -- Screen Position Check
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
-                    -- Tracers
-                    if tracersEnabled and onScreen and espEnabled then
-                        data.Tracer.From = bottomCenter
-                        data.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                        data.Tracer.Visible = true
-                    else
-                        data.Tracer.Visible = false
-                    end
-                    
-                    -- Distance
-                    if distanceEnabled and onScreen and espEnabled and LocalPlayer.Character then
-                        local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if localRoot then
-                            local distance = math.floor((localRoot.Position - rootPart.Position).Magnitude)
-                            data.Text.Text = distance .. " studs"
-                            data.Text.Position = Vector2.new(screenPos.X, screenPos.Y + 15)
-                            data.Text.Visible = true
+                    if onScreen then
+                        -- 2D Box Calculation
+                        if boxEnabled and espEnabled then
+                            local head = char:FindFirstChild("Head")
+                            if head then
+                                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                                local legPos = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+                                local height = math.abs(headPos.Y - legPos.Y)
+                                local width = height / 1.5
+                                
+                                data.Box.Size = Vector2.new(width, height)
+                                data.Box.Position = Vector2.new(screenPos.X - width / 2, screenPos.Y - height / 2)
+                                data.Box.Visible = true
+                            else
+                                data.Box.Visible = false
+                            end
+                        else
+                            data.Box.Visible = false
+                        end
+
+                        -- Tracers
+                        if tracersEnabled and espEnabled then
+                            data.Tracer.From = bottomCenter
+                            data.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                            data.Tracer.Visible = true
+                        else
+                            data.Tracer.Visible = false
+                        end
+                        
+                        -- Distance Indicator
+                        if distanceEnabled and espEnabled and LocalPlayer.Character then
+                            local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if localRoot then
+                                local distance = math.floor((localRoot.Position - rootPart.Position).Magnitude)
+                                data.Text.Text = distance .. " studs"
+                                data.Text.Position = Vector2.new(screenPos.X, screenPos.Y + (boxEnabled and (data.Box.Size.Y / 2 + 5) or 15))
+                                data.Text.Visible = true
+                            else
+                                data.Text.Visible = false
+                            end
                         else
                             data.Text.Visible = false
                         end
                     else
+                        data.Box.Visible = false
+                        data.Tracer.Visible = false
                         data.Text.Visible = false
                     end
                 else
                     data.Highlight.Parent = nil
+                    data.Box.Visible = false
                     data.Tracer.Visible = false
                     data.Text.Visible = false
                 end
@@ -194,10 +231,20 @@ VisualsTab:CreateToggle({
         if not v then
             for _, data in pairs(espObjects) do
                 if data.Highlight then data.Highlight.Parent = nil end
+                if data.Box then data.Box.Visible = false end
                 if data.Tracer then data.Tracer.Visible = false end
                 if data.Text then data.Text.Visible = false end
             end
         end
+    end
+})
+
+VisualsTab:CreateToggle({
+    Name = "Box ESP",
+    CurrentValue = false,
+    Flag = "BoxESP",
+    Callback = function(v)
+        boxEnabled = v
     end
 })
 
@@ -230,14 +277,25 @@ VisualsTab:CreateColorPicker({
                 data.Highlight.FillColor = v
                 data.Highlight.OutlineColor = v
             end
+            if data.Box then data.Box.Color = v end
             if data.Tracer then data.Tracer.Color = v end
             if data.Text then data.Text.Color = v end
         end
     end
 })
 
--- Settings Tab (Destroy UI)
+-- Settings Tab
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+SettingsTab:CreateKeybind({
+    Name = "Toggle Menu Keybind",
+    CurrentKeybind = "K",
+    HoldToInteract = false,
+    Flag = "UIKeybind",
+    Callback = function(Keybind)
+        -- Keybind change handler
+    end,
+})
 
 SettingsTab:CreateButton({
     Name = "Destroy UI & Revert All",
@@ -250,7 +308,7 @@ SettingsTab:CreateButton({
 
 Rayfield:Notify({
    Title = "ZERTZ ESP Loaded!",
-   Content = "Clean Visuals, Tracers & Distance active.",
+   Content = "Box, Outline, Tracers & Distance active. Press 'K' to toggle menu.",
    Duration = 5,
 })
 
