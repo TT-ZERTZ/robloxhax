@@ -902,4 +902,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP V11 Loaded Successfully!")
+print("Thanks for using ZERTZ Rivals Cheats free!")
