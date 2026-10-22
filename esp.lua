@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP - 100% Custom Dark Blue UI (Mobile & PC)
+-- ZERTZ ESP - Ultra Dark Blue Custom UI (V2)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -20,7 +20,17 @@ local espEnabled = false
 local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
-local currentESPColor = Color3.fromRGB(0, 150, 255) -- Bright Blue accent
+
+-- Preset Color List for Customization
+local colorPresets = {
+    Color3.fromRGB(0, 150, 255),  -- Electric Blue
+    Color3.fromRGB(0, 255, 200),  -- Neon Cyan
+    Color3.fromRGB(255, 50, 80),  -- Crimson Red
+    Color3.fromRGB(50, 255, 100), -- Lime Green
+    Color3.fromRGB(180, 70, 255)  -- Purple
+}
+local currentColorIndex = 1
+local currentESPColor = colorPresets[currentColorIndex]
 
 local espObjects = {}
 local connections = {}
@@ -60,9 +70,9 @@ local function createESP(target)
     box.Visible = false
 
     local tracer = Drawing.new("Line")
-    tracer.Thickness = 1
+    tracer.Thickness = 1.2
     tracer.Color = currentESPColor
-    tracer.Transparency = 0.7
+    tracer.Transparency = 0.8
     tracer.Visible = false
     
     local text = Drawing.new("Text")
@@ -114,7 +124,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
-                        -- Box ESP (Feet to Head bounds)
+                        -- Box ESP (Feet to Head)
                         if boxEnabled and espEnabled then
                             local headWorld = rootPart.Position + Vector3.new(0, 2.5, 0)
                             local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
@@ -178,64 +188,99 @@ end)
 
 connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) end)
 
--- ═══ CUSTOM UI CREATION (DARK BLUE & MOBILE FRIENDLY) ═══
+-- ═══ CUSTOM UI DESIGN ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESPCustom"
+ScreenGui.Name = "ZertzESP_UltraUI"
 ScreenGui.ResetOnSpawn = false
-pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-if not ScreenGui.Parent then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- Draggable Function (Mobile Touch & Mouse)
+local function makeDraggable(guiObject, dragHandle)
+    dragHandle = dragHandle or guiObject
+    local dragging, dragStart, startPos
+    
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = guiObject.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            guiObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 end
 
--- Floating Mobile Open/Close Button (Draggable / Tap)
+-- Floating Draggable Open Button for Mobile / PC
 local OpenButton = Instance.new("TextButton")
 OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 45, 0, 45)
-OpenButton.Position = UDim2.new(0, 20, 0, 150)
-OpenButton.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
-OpenButton.BorderColor3 = Color3.fromRGB(0, 120, 255)
-OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenButton.TextSize = 16
+OpenButton.Size = UDim2.new(0, 48, 0, 48)
+OpenButton.Position = UDim2.new(0, 15, 0, 180)
+OpenButton.BackgroundColor3 = Color3.fromRGB(12, 18, 30)
+OpenButton.TextColor3 = Color3.fromRGB(0, 170, 255)
+OpenButton.TextSize = 20
 OpenButton.Font = Enum.Font.GothamBold
 OpenButton.Text = "Z"
 OpenButton.Parent = ScreenGui
 
 local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 10)
+OpenCorner.CornerRadius = UDim.new(0, 12)
 OpenCorner.Parent = OpenButton
 
--- Main Window Frame (Dark Blue Theme)
+local OpenStroke = Instance.new("UIStroke")
+OpenStroke.Color = Color3.fromRGB(0, 120, 255)
+OpenStroke.Thickness = 1.5
+OpenStroke.Parent = OpenButton
+
+makeDraggable(OpenButton)
+
+-- Main Window Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 340)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -170)
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
+MainFrame.Size = UDim2.new(0, 290, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -145, 0.5, -180)
+MainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
--- Top Bar (Draggable for Mobile & PC)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(25, 40, 65)
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
+
+-- Top Bar Header
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(18, 28, 48)
+TopBar.Size = UDim2.new(1, 0, 0, 42)
+TopBar.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
 local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 12)
+TopCorner.CornerRadius = UDim.new(0, 14)
 TopCorner.Parent = TopBar
 
 local TopCover = Instance.new("Frame")
-TopCover.Size = UDim2.new(1, 0, 0, 10)
-TopCover.Position = UDim2.new(0, 0, 1, -10)
-TopCover.BackgroundColor3 = Color3.fromRGB(18, 28, 48)
+TopCover.Size = UDim2.new(1, 0, 0, 12)
+TopCover.Position = UDim2.new(0, 0, 1, -12)
+TopCover.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
 TopCover.BorderSizePixel = 0
 TopCover.Parent = TopBar
 
@@ -243,21 +288,24 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -20, 1, 0)
 TitleLabel.Position = UDim2.new(0, 15, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.TextColor3 = Color3.fromRGB(220, 240, 255)
+TitleLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
 TitleLabel.TextSize = 15
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "ZERTZ ESP"
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
--- Content Layout
+makeDraggable(MainFrame, TopBar)
+
+-- Container for Toggles & Controls
 local ContentContainer = Instance.new("ScrollingFrame")
 ContentContainer.Size = UDim2.new(1, -20, 1, -55)
 ContentContainer.Position = UDim2.new(0, 10, 0, 48)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.BorderSizePixel = 0
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 280)
-ContentContainer.ScrollBarThickness = 3
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 310)
+ContentContainer.ScrollBarThickness = 2
+ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
 ContentContainer.Parent = MainFrame
 
 local UIList = Instance.new("UIListLayout")
@@ -265,57 +313,90 @@ UIList.SortOrder = Enum.SortOrder.LayoutOrder
 UIList.Padding = UDim.new(0, 8)
 UIList.Parent = ContentContainer
 
--- Toggle Builder
+-- Builder for Modern Toggles
 local function createToggle(name, callback)
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, 0, 0, 40)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 26, 42)
-    toggleBtn.TextColor3 = Color3.fromRGB(190, 210, 235)
-    toggleBtn.TextSize = 14
-    toggleBtn.Font = Enum.Font.GothamMedium
-    toggleBtn.Text = "  " .. name .. ": OFF"
-    toggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+    toggleBtn.Size = UDim2.new(1, 0, 0, 42)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(14, 20, 32)
+    toggleBtn.Text = ""
+    toggleBtn.AutoButtonColor = false
     toggleBtn.Parent = ContentContainer
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 9)
     corner.Parent = toggleBtn
     
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(22, 32, 50)
+    stroke.Thickness = 1
+    stroke.Parent = toggleBtn
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(180, 200, 225)
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleBtn
+
+    local statusDot = Instance.new("Frame")
+    statusDot.Size = UDim2.new(0, 10, 0, 10)
+    statusDot.Position = UDim2.new(1, -22, 0.5, -5)
+    statusDot.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
+    statusDot.BorderSizePixel = 0
+    statusDot.Parent = toggleBtn
+
+    local dotCorner = Instance.new("UICorner")
+    dotCorner.CornerRadius = UDim.new(1, 0)
+    dotCorner.Parent = statusDot
+
     local state = false
     toggleBtn.MouseButton1Click:Connect(function()
         state = not state
         if state then
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
-            toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            toggleBtn.Text = "  " .. name .. ": ON"
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(12, 30, 55)
+            stroke.Color = Color3.fromRGB(0, 130, 255)
+            statusDot.BackgroundColor3 = Color3.fromRGB(0, 210, 255)
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 26, 42)
-            toggleBtn.TextColor3 = Color3.fromRGB(190, 210, 235)
-            toggleBtn.Text = "  " .. name .. ": OFF"
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(14, 20, 32)
+            stroke.Color = Color3.fromRGB(22, 32, 50)
+            statusDot.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
+            label.TextColor3 = Color3.fromRGB(180, 200, 225)
         end
         callback(state)
     end)
 end
 
--- Button Builder
-local function createButton(name, buttonColor, callback)
+-- Builder for Custom Buttons
+local function createButton(name, color, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = buttonColor
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 14
-    btn.Font = Enum.Font.GothamBold
+    btn.Size = UDim2.new(1, 0, 0, 42)
+    btn.BackgroundColor3 = color
     btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
     btn.Parent = ContentContainer
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 9)
     corner.Parent = btn
     
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.85
+    stroke.Thickness = 1
+    stroke.Parent = btn
+    
     btn.MouseButton1Click:Connect(callback)
+    return btn
 end
 
--- Build Controls
+-- Construct Features
 createToggle("ESP Outline", function(v)
     espEnabled = v
     if not v then
@@ -340,7 +421,24 @@ createToggle("Distance Indicator", function(v)
     distanceEnabled = v
 end)
 
-createButton("Destroy UI & Exit", Color3.fromRGB(160, 35, 35), function()
+-- Dynamic Preset Color Switcher Button
+local colorBtn
+colorBtn = createButton("Cycle Theme Color", Color3.fromRGB(18, 30, 52), function()
+    currentColorIndex = (currentColorIndex % #colorPresets) + 1
+    currentESPColor = colorPresets[currentColorIndex]
+    
+    for _, data in pairs(espObjects) do
+        if data.Highlight then
+            data.Highlight.FillColor = currentESPColor
+            data.Highlight.OutlineColor = currentESPColor
+        end
+        if data.Box then data.Box.Color = currentESPColor end
+        if data.Tracer then data.Tracer.Color = currentESPColor end
+        if data.Text then data.Text.Color = currentESPColor end
+    end
+end)
+
+createButton("Destroy UI & Exit", Color3.fromRGB(140, 30, 40), function()
     if _G.HubCleanup then
         _G.HubCleanup()
     end
@@ -351,30 +449,7 @@ OpenButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- Make Window Draggable (Supports Mobile Touch and Mouse Dragging)
-local dragging, dragInput, dragStart, startPos
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Cleanup / Destroy Function
+-- Clean Exit Handler
 _G.HubCleanup = function()
     for _, c in pairs(connections) do
         if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
@@ -390,4 +465,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP Custom Dark Blue UI Loaded Successfully!")
+print("ZERTZ ESP Ultra Custom UI Active!")
