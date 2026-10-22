@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP, MOVEMENT & RIVALS HUB (V7)
+-- ZERTZ ESP, MOVEMENT & RIVALS HUB (V9)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -9,7 +9,6 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -32,9 +31,6 @@ local infJumpEnabled = false
 local spinbotEnabled = false
 local flyEnabled = false
 local flySpeed = 50
-
--- Rivals State
-local killEffectsEnabled = false
 
 -- Settings State
 local toggleKey = Enum.KeyCode.K
@@ -121,38 +117,6 @@ local function removeESP(target)
     end
 end
 
--- ═══ RIVALS FEATURES (APOLLO STYLE + WARNING HANDLING) ═══
-local function unlockAllSkins()
-    pcall(function()
-        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local n = string.lower(obj.Name)
-                if n:find("unlock") or n:find("purchase") or n:find("skin") or n:find("wrap") or n:find("cosmetic") then
-                    pcall(function()
-                        obj:FireServer("All")
-                        obj:FireServer(true)
-                    end)
-                end
-            end
-        end
-    end)
-end
-
-local function randomizeWeaponSkins()
-    pcall(function()
-        local weaponModels = LocalPlayer.PlayerScripts.Assets.ViewModels.Weapons:GetChildren()
-        local mats = Enum.Material:GetEnumItems()
-        for _, model in ipairs(weaponModels) do
-            for _, part in ipairs(model:GetDescendants()) do
-                if part:IsA("BasePart") and part.Transparency ~= 1 then
-                    part.Color = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
-                    part.Material = mats[math.random(#mats)]
-                end
-            end
-        end
-    end)
-end
-
 -- ═══ MOVEMENT LOGIC ═══
 connections.infJump = UserInputService.JumpRequest:Connect(function()
     if infJumpEnabled and LocalPlayer.Character then
@@ -205,7 +169,7 @@ local function updateSpeedState(v)
     end
 end
 
--- ═══ RENDER LOOP ═══
+-- ═══ RENDER LOOP (RIVALS-FIXED FEET-TO-HEAD BOX) ═══
 connections.render = RunService.RenderStepped:Connect(function()
     local viewportSize = Camera.ViewportSize
     local bottomCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
@@ -228,35 +192,18 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
+                        -- Rivals-Friendly Head-to-Feet Absolute Calculation
                         if boxEnabled and espEnabled then
-                            local cf, size = char:GetBoundingBox()
-                            local corners = {
-                                cf * CFrame.new(size.X/2, size.Y/2, size.Z/2),
-                                cf * CFrame.new(-size.X/2, size.Y/2, size.Z/2),
-                                cf * CFrame.new(size.X/2, -size.Y/2, size.Z/2),
-                                cf * CFrame.new(-size.X/2, -size.Y/2, size.Z/2),
-                                cf * CFrame.new(size.X/2, size.Y/2, -size.Z/2),
-                                cf * CFrame.new(-size.X/2, size.Y/2, -size.Z/2),
-                                cf * CFrame.new(size.X/2, -size.Y/2, -size.Z/2),
-                                cf * CFrame.new(-size.X/2, -size.Y/2, -size.Z/2),
-                            }
-                            
-                            local minX, minY = math.huge, math.huge
-                            local maxX, maxY = -math.huge, -math.huge
-                            local boxVisible = true
-                            
-                            for _, corner in ipairs(corners) do
-                                local cPos, cOnScreen = Camera:WorldToViewportPoint(corner.Position)
-                                if not cOnScreen then boxVisible = false end
-                                minX = math.min(minX, cPos.X)
-                                minY = math.min(minY, cPos.Y)
-                                maxX = math.max(maxX, cPos.X)
-                                maxY = math.max(maxY, cPos.Y)
-                            end
-                            
-                            if boxVisible then
-                                data.Box.Size = Vector2.new(maxX - minX, maxY - minY)
-                                data.Box.Position = Vector2.new(minX, minY)
+                            local head = char:FindFirstChild("Head")
+                            if head then
+                                local headScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.7, 0))
+                                local feetScreen = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3.2, 0))
+                                
+                                local height = math.abs(headScreen.Y - feetScreen.Y)
+                                local width = height / 1.8
+                                
+                                data.Box.Size = Vector2.new(width, height)
+                                data.Box.Position = Vector2.new(headScreen.X - (width / 2), headScreen.Y)
                                 data.Box.Visible = true
                             else
                                 data.Box.Visible = false
@@ -266,7 +213,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                         end
 
                         if tracersEnabled and espEnabled then
-                            local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
+                            local feetWorld = rootPart.Position - Vector3.new(0, 3.2, 0)
                             local feetScreen = Camera:WorldToViewportPoint(feetWorld)
                             
                             data.Tracer.From = bottomCenter
@@ -311,7 +258,7 @@ connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) e
 
 -- ═══ UI CREATION (APOLLO STYLE HUB) ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESP_ApolloHubV7"
+ScreenGui.Name = "ZertzESP_ApolloHubV9"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -715,6 +662,51 @@ local function createButton(parent, name, color, callback)
     return btn
 end
 
+local function createButtonWithSubtext(parent, mainText, subtext, color, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 48)
+    container.BackgroundColor3 = color
+    container.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 7)
+    corner.Parent = container
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 130, 255)
+    stroke.Thickness = 1
+    stroke.Parent = container
+
+    local mainLabel = Instance.new("TextLabel")
+    mainLabel.Size = UDim2.new(1, 0, 0, 24)
+    mainLabel.Position = UDim2.new(0, 0, 0, 4)
+    mainLabel.BackgroundTransparency = 1
+    mainLabel.Text = mainText
+    mainLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mainLabel.TextSize = 13
+    mainLabel.Font = Enum.Font.GothamBold
+    mainLabel.Parent = container
+
+    local subLabel = Instance.new("TextLabel")
+    subLabel.Size = UDim2.new(1, 0, 0, 16)
+    subLabel.Position = UDim2.new(0, 0, 0, 26)
+    subLabel.BackgroundTransparency = 1
+    subLabel.Text = subtext
+    subLabel.TextColor3 = Color3.fromRGB(140, 170, 210)
+    subLabel.TextSize = 10
+    subLabel.Font = Enum.Font.GothamMedium
+    subLabel.Parent = container
+
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1, 0, 1, 0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = container
+
+    clickBtn.MouseButton1Click:Connect(callback)
+    return container
+end
+
 -- ═══ POPULATE TABS ═══
 -- Visuals Tab
 createToggle(VisualsPage, "ESP Outline", function(v)
@@ -789,37 +781,18 @@ createInputSlider(MovementPage, "Fly Speed", 50, function(v)
     flySpeed = v
 end)
 
--- Rivals Tab (Apollo Inspired + Warning Banner)
-local warningLabel = Instance.new("TextLabel")
-warningLabel.Size = UDim2.new(1, 0, 0, 36)
-warningLabel.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
-warningLabel.TextColor3 = Color3.fromRGB(255, 120, 120)
-warningLabel.TextSize = 10
-warningLabel.Font = Enum.Font.GothamBold
-warningLabel.Text = "⚠️ KILL EFFECTS MIGHT BUG OUT WEAPON USE WITH CAUTION"
-warningLabel.TextWrapped = true
-warningLabel.Parent = RivalsPage
-
-local warnCorner = Instance.new("UICorner")
-warnCorner.CornerRadius = UDim.new(0, 6)
-warnCorner.Parent = warningLabel
-
-local warnStroke = Instance.new("UIStroke")
-warnStroke.Color = Color3.fromRGB(180, 40, 40)
-warnStroke.Thickness = 1
-warnStroke.Parent = warningLabel
-
-createToggle(RivalsPage, "Kill Effects (Caution)", function(v)
-    killEffectsEnabled = v
-end)
-
-createButton(RivalsPage, "Unlock All Skins / Cosmetics", Color3.fromRGB(16, 26, 45), function()
-    unlockAllSkins()
-end)
-
-createButton(RivalsPage, "Randomize Weapon Skins", Color3.fromRGB(16, 26, 45), function()
-    randomizeWeaponSkins()
-end)
+-- Rivals Tab (External Loader + Footprint)
+createButtonWithSubtext(
+    RivalsPage,
+    "LOAD EXTERNAL UI",
+    "loads Apollo Changer v1.8.4",
+    Color3.fromRGB(16, 32, 58),
+    function()
+        pcall(function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/apolloskinchanger/apollochanger/main/apollochangerv1.8.4.lua'))()
+        end)
+    end
+)
 
 -- Settings Tab
 createToggle(SettingsPage, "Show Mobile Open Button", function(v)
@@ -855,4 +828,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP, Movement & Rivals Hub V7 Loaded Successfully!")
+print("ZERTZ ESP V9 Loaded - Rivals Box Perspective Fixed!")
