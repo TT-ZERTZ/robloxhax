@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP, MOVEMENT & RIVALS HUB (V9)
+-- ZERTZ ESP, MOVEMENT & RIVALS HUB (V10)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -31,6 +31,9 @@ local infJumpEnabled = false
 local spinbotEnabled = false
 local flyEnabled = false
 local flySpeed = 50
+
+-- Rivals State
+local killEffectsEnabled = false
 
 -- Settings State
 local toggleKey = Enum.KeyCode.K
@@ -117,6 +120,22 @@ local function removeESP(target)
     end
 end
 
+-- ═══ RIVALS FEATURES ═══
+local function randomizeWeaponSkins()
+    pcall(function()
+        local weaponModels = LocalPlayer.PlayerScripts.Assets.ViewModels.Weapons:GetChildren()
+        local mats = Enum.Material:GetEnumItems()
+        for _, model in ipairs(weaponModels) do
+            for _, part in ipairs(model:GetDescendants()) do
+                if part:IsA("BasePart") and part.Transparency ~= 1 then
+                    part.Color = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
+                    part.Material = mats[math.random(#mats)]
+                end
+            end
+        end
+    end)
+end
+
 -- ═══ MOVEMENT LOGIC ═══
 connections.infJump = UserInputService.JumpRequest:Connect(function()
     if infJumpEnabled and LocalPlayer.Character then
@@ -192,7 +211,6 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
-                        -- Rivals-Friendly Head-to-Feet Absolute Calculation
                         if boxEnabled and espEnabled then
                             local head = char:FindFirstChild("Head")
                             if head then
@@ -258,7 +276,7 @@ connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) e
 
 -- ═══ UI CREATION (APOLLO STYLE HUB) ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESP_ApolloHubV9"
+ScreenGui.Name = "ZertzESP_ApolloHubV10"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -422,7 +440,7 @@ local RivalsPage = Instance.new("ScrollingFrame")
 RivalsPage.Size = UDim2.new(1, 0, 1, 0)
 RivalsPage.BackgroundTransparency = 1
 RivalsPage.BorderSizePixel = 0
-RivalsPage.CanvasSize = UDim2.new(0, 0, 0, 280)
+RivalsPage.CanvasSize = UDim2.new(0, 0, 0, 300)
 RivalsPage.ScrollBarThickness = 2
 RivalsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 150, 255)
 RivalsPage.Visible = false
@@ -781,7 +799,35 @@ createInputSlider(MovementPage, "Fly Speed", 50, function(v)
     flySpeed = v
 end)
 
--- Rivals Tab (External Loader + Footprint)
+-- Rivals Tab (Warning, standard options first, then External Loader at the very bottom)
+local warningLabel = Instance.new("TextLabel")
+warningLabel.Size = UDim2.new(1, 0, 0, 36)
+warningLabel.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
+warningLabel.TextColor3 = Color3.fromRGB(255, 120, 120)
+warningLabel.TextSize = 10
+warningLabel.Font = Enum.Font.GothamBold
+warningLabel.Text = "⚠️ KILL EFFECTS MIGHT BUG OUT WEAPON USE WITH CAUTION"
+warningLabel.TextWrapped = true
+warningLabel.Parent = RivalsPage
+
+local warnCorner = Instance.new("UICorner")
+warnCorner.CornerRadius = UDim.new(0, 6)
+warnCorner.Parent = warningLabel
+
+local warnStroke = Instance.new("UIStroke")
+warnStroke.Color = Color3.fromRGB(180, 40, 40)
+warnStroke.Thickness = 1
+warnStroke.Parent = warningLabel
+
+createToggle(RivalsPage, "Kill Effects (Caution)", function(v)
+    killEffectsEnabled = v
+end)
+
+createButton(RivalsPage, "Randomize Weapon Skins", Color3.fromRGB(16, 26, 45), function()
+    randomizeWeaponSkins()
+end)
+
+-- Load External UI at the very bottom as a last resort option
 createButtonWithSubtext(
     RivalsPage,
     "LOAD EXTERNAL UI",
@@ -828,4 +874,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP V9 Loaded - Rivals Box Perspective Fixed!")
+print("ZERTZ ESP V10 Loaded Successfully!")
