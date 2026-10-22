@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP - Custom Dark Blue UI (Mobile & PC)
+-- ZERTZ ESP - 100% Custom Dark Blue UI (Mobile & PC)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -20,7 +20,7 @@ local espEnabled = false
 local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
-local currentESPColor = Color3.fromRGB(0, 150, 255) -- Default vibrant blue
+local currentESPColor = Color3.fromRGB(0, 150, 255) -- Bright Blue accent
 
 local espObjects = {}
 local connections = {}
@@ -114,6 +114,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
+                        -- Box ESP (Feet to Head bounds)
                         if boxEnabled and espEnabled then
                             local headWorld = rootPart.Position + Vector3.new(0, 2.5, 0)
                             local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
@@ -131,6 +132,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                             data.Box.Visible = false
                         end
 
+                        -- Tracers
                         if tracersEnabled and espEnabled then
                             local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
                             local feetScreen = Camera:WorldToViewportPoint(feetWorld)
@@ -142,6 +144,7 @@ connections.render = RunService.RenderStepped:Connect(function()
                             data.Tracer.Visible = false
                         end
                         
+                        -- Distance Indicator
                         if distanceEnabled and espEnabled and LocalPlayer.Character then
                             local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                             if localRoot then
@@ -177,7 +180,7 @@ connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) e
 
 -- ═══ CUSTOM UI CREATION (DARK BLUE & MOBILE FRIENDLY) ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESPGui"
+ScreenGui.Name = "ZertzESPCustom"
 ScreenGui.ResetOnSpawn = false
 pcall(function()
     ScreenGui.Parent = CoreGui
@@ -186,11 +189,11 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Floating Mobile Open/Close Button
+-- Floating Mobile Open/Close Button (Draggable / Tap)
 local OpenButton = Instance.new("TextButton")
 OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 50, 0, 50)
-OpenButton.Position = UDim2.new(0, 20, 0, 20)
+OpenButton.Size = UDim2.new(0, 45, 0, 45)
+OpenButton.Position = UDim2.new(0, 20, 0, 150)
 OpenButton.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
 OpenButton.BorderColor3 = Color3.fromRGB(0, 120, 255)
 OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -203,12 +206,12 @@ local OpenCorner = Instance.new("UICorner")
 OpenCorner.CornerRadius = UDim.new(0, 10)
 OpenCorner.Parent = OpenButton
 
--- Main Window Frame
+-- Main Window Frame (Dark Blue Theme)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
-MainFrame.BackgroundColor3 = Color3.fromRGB(12, 18, 30)
+MainFrame.Size = UDim2.new(0, 300, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -170)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
@@ -229,7 +232,6 @@ local TopCorner = Instance.new("UICorner")
 TopCorner.CornerRadius = UDim.new(0, 12)
 TopCorner.Parent = TopBar
 
--- Fix top corners rounding bottom of top bar
 local TopCover = Instance.new("Frame")
 TopCover.Size = UDim2.new(1, 0, 0, 10)
 TopCover.Position = UDim2.new(0, 0, 1, -10)
@@ -248,27 +250,27 @@ TitleLabel.Text = "ZERTZ ESP"
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
--- Container for toggles
+-- Content Layout
 local ContentContainer = Instance.new("ScrollingFrame")
 ContentContainer.Size = UDim2.new(1, -20, 1, -55)
 ContentContainer.Position = UDim2.new(0, 10, 0, 48)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.BorderSizePixel = 0
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 320)
-ContentContainer.ScrollBarThickness = 4
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 280)
+ContentContainer.ScrollBarThickness = 3
 ContentContainer.Parent = MainFrame
 
 local UIList = Instance.new("UIListLayout")
 UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Padding = UDim.new(0, 10)
+UIList.Padding = UDim.new(0, 8)
 UIList.Parent = ContentContainer
 
--- Helper function to create stylish Dark Blue Toggles
+-- Toggle Builder
 local function createToggle(name, callback)
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, 0, 0, 42)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
-    toggleBtn.TextColor3 = Color3.fromRGB(200, 220, 240)
+    toggleBtn.Size = UDim2.new(1, 0, 0, 40)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 26, 42)
+    toggleBtn.TextColor3 = Color3.fromRGB(190, 210, 235)
     toggleBtn.TextSize = 14
     toggleBtn.Font = Enum.Font.GothamMedium
     toggleBtn.Text = "  " .. name .. ": OFF"
@@ -287,18 +289,18 @@ local function createToggle(name, callback)
             toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             toggleBtn.Text = "  " .. name .. ": ON"
         else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
-            toggleBtn.TextColor3 = Color3.fromRGB(200, 220, 240)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 26, 42)
+            toggleBtn.TextColor3 = Color3.fromRGB(190, 210, 235)
             toggleBtn.Text = "  " .. name .. ": OFF"
         end
         callback(state)
     end)
 end
 
--- Helper function for buttons (like Destroy)
+-- Button Builder
 local function createButton(name, buttonColor, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 42)
+    btn.Size = UDim2.new(1, 0, 0, 40)
     btn.BackgroundColor3 = buttonColor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 14
@@ -338,18 +340,18 @@ createToggle("Distance Indicator", function(v)
     distanceEnabled = v
 end)
 
-createButton("Destroy UI & Exit", Color3.fromRGB(180, 40, 40), function()
+createButton("Destroy UI & Exit", Color3.fromRGB(160, 35, 35), function()
     if _G.HubCleanup then
         _G.HubCleanup()
     end
 end)
 
--- Toggle Menu Visibility via Floating Button
+-- Toggle Menu Visibility via Floating 'Z' Button
 OpenButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- Make Window Draggable (Supports both Mobile Touch & Mouse)
+-- Make Window Draggable (Supports Mobile Touch and Mouse Dragging)
 local dragging, dragInput, dragStart, startPos
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -372,7 +374,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Cleanup function definition
+-- Cleanup / Destroy Function
 _G.HubCleanup = function()
     for _, c in pairs(connections) do
         if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
@@ -388,4 +390,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP Custom UI Loaded Successfully!")
+print("ZERTZ ESP Custom Dark Blue UI Loaded Successfully!")
