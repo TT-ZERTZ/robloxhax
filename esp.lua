@@ -1,5 +1,5 @@
 -- ============================================
--- ZERTZ ESP - Ultra Dark Blue Custom UI (V2)
+-- ZERTZ ESP - Custom Dark Blue UI (Moondiety Style)
 -- ============================================
 
 if _G.HubCleanup then _G.HubCleanup() end
@@ -21,7 +21,6 @@ local boxEnabled = false
 local tracersEnabled = false
 local distanceEnabled = false
 
--- Preset Color List for Customization
 local colorPresets = {
     Color3.fromRGB(0, 150, 255),  -- Electric Blue
     Color3.fromRGB(0, 255, 200),  -- Neon Cyan
@@ -188,15 +187,15 @@ end)
 
 connections.removing = Players.PlayerRemoving:Connect(function(p) removeESP(p) end)
 
--- ═══ CUSTOM UI DESIGN ═══
+-- ═══ UI CREATION (MOONDIETY THEME & STRUCTURE) ═══
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZertzESP_UltraUI"
+ScreenGui.Name = "ZertzESP_Moondiety"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
--- Draggable Function (Mobile Touch & Mouse)
+-- Draggable Helper Function
 local function makeDraggable(guiObject, dragHandle)
     dragHandle = dragHandle or guiObject
     local dragging, dragStart, startPos
@@ -223,7 +222,7 @@ local function makeDraggable(guiObject, dragHandle)
     end)
 end
 
--- Floating Draggable Open Button for Mobile / PC
+-- Floating Draggable Open Button
 local OpenButton = Instance.new("TextButton")
 OpenButton.Name = "OpenButton"
 OpenButton.Size = UDim2.new(0, 48, 0, 48)
@@ -249,8 +248,8 @@ makeDraggable(OpenButton)
 -- Main Window Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 290, 0, 360)
-MainFrame.Position = UDim2.new(0.5, -145, 0.5, -180)
+MainFrame.Size = UDim2.new(0, 340, 0, 390)
+MainFrame.Position = UDim2.new(0.5, -170, 0.5, -195)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = true
@@ -291,39 +290,116 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
 TitleLabel.TextSize = 15
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "ZERTZ ESP"
+TitleLabel.Text = "ZERTZ ESP HUB"
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
 
 makeDraggable(MainFrame, TopBar)
 
--- Container for Toggles & Controls
-local ContentContainer = Instance.new("ScrollingFrame")
-ContentContainer.Size = UDim2.new(1, -20, 1, -55)
-ContentContainer.Position = UDim2.new(0, 10, 0, 48)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.BorderSizePixel = 0
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 310)
-ContentContainer.ScrollBarThickness = 2
-ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
-ContentContainer.Parent = MainFrame
+-- Tab Buttons Container (Visuals & Settings)
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 35)
+TabBar.Position = UDim2.new(0, 10, 0, 50)
+TabBar.BackgroundTransparency = 1
+TabBar.Parent = MainFrame
 
-local UIList = Instance.new("UIListLayout")
-UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Padding = UDim.new(0, 8)
-UIList.Parent = ContentContainer
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.FillDirection = Enum.FillDirection.Horizontal
+TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TabListLayout.Padding = UDim.new(0, 10)
+TabListLayout.Parent = TabBar
 
--- Builder for Modern Toggles
-local function createToggle(name, callback)
+-- Content Pages Container
+local PagesContainer = Instance.new("Frame")
+PagesContainer.Size = UDim2.new(1, -20, 1, -100)
+PagesContainer.Position = UDim2.new(0, 10, 0, 92)
+PagesContainer.BackgroundTransparency = 1
+PagesContainer.Parent = MainFrame
+
+local VisualsPage = Instance.new("ScrollingFrame")
+VisualsPage.Size = UDim2.new(1, 0, 1, 0)
+VisualsPage.BackgroundTransparency = 1
+VisualsPage.BorderSizePixel = 0
+VisualsPage.CanvasSize = UDim2.new(0, 0, 0, 280)
+VisualsPage.ScrollBarThickness = 2
+VisualsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+VisualsPage.Visible = true
+VisualsPage.Parent = PagesContainer
+
+local SettingsPage = Instance.new("ScrollingFrame")
+SettingsPage.Size = UDim2.new(1, 0, 1, 0)
+SettingsPage.BackgroundTransparency = 1
+SettingsPage.BorderSizePixel = 0
+SettingsPage.CanvasSize = UDim2.new(0, 0, 0, 280)
+SettingsPage.ScrollBarThickness = 2
+SettingsPage.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+SettingsPage.Visible = false
+SettingsPage.Parent = PagesContainer
+
+local function createPageLayout(parentPage)
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = parentPage
+end
+
+createPageLayout(VisualsPage)
+createPageLayout(SettingsPage)
+
+-- Tab Switching Functionality
+local function createTabButton(name, targetPage)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 145, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
+    btn.TextColor3 = Color3.fromRGB(160, 180, 205)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamMedium
+    btn.Text = name
+    btn.Parent = TabBar
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(25, 40, 65)
+    stroke.Thickness = 1
+    stroke.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        VisualsPage.Visible = false
+        SettingsPage.Visible = false
+        targetPage.Visible = true
+        
+        for _, child in ipairs(TabBar:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundColor3 = Color3.fromRGB(14, 22, 36)
+                child.TextColor3 = Color3.fromRGB(160, 180, 205)
+            end
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
+    return btn
+end
+
+local tab1 = createTabButton("Visuals", VisualsPage)
+tab1.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
+tab1.TextColor3 = Color3.fromRGB(255, 255, 255)
+createTabButton("Settings", SettingsPage)
+
+-- Builder for Toggles
+local function createToggle(parent, name, callback)
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, 0, 0, 42)
+    toggleBtn.Size = UDim2.new(1, 0, 0, 40)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(14, 20, 32)
     toggleBtn.Text = ""
     toggleBtn.AutoButtonColor = false
-    toggleBtn.Parent = ContentContainer
+    toggleBtn.Parent = parent
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 9)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = toggleBtn
     
     local stroke = Instance.new("UIStroke")
@@ -372,32 +448,25 @@ local function createToggle(name, callback)
 end
 
 -- Builder for Custom Buttons
-local function createButton(name, color, callback)
+local function createButton(parent, name, color, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 42)
+    btn.Size = UDim2.new(1, 0, 0, 40)
     btn.BackgroundColor3 = color
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
-    btn.Parent = ContentContainer
+    btn.Parent = parent
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 9)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
     
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Transparency = 0.85
-    stroke.Thickness = 1
-    stroke.Parent = btn
-    
     btn.MouseButton1Click:Connect(callback)
-    return btn
 end
 
--- Construct Features
-createToggle("ESP Outline", function(v)
+-- ═══ VISUALS TAB CONTROLS ═══
+createToggle(VisualsPage, "ESP Outline", function(v)
     espEnabled = v
     if not v then
         for _, data in pairs(espObjects) do
@@ -409,21 +478,19 @@ createToggle("ESP Outline", function(v)
     end
 end)
 
-createToggle("Box ESP", function(v)
+createToggle(VisualsPage, "Box ESP", function(v)
     boxEnabled = v
 end)
 
-createToggle("Tracers", function(v)
+createToggle(VisualsPage, "Tracers", function(v)
     tracersEnabled = v
 end)
 
-createToggle("Distance Indicator", function(v)
+createToggle(VisualsPage, "Distance Indicator", function(v)
     distanceEnabled = v
 end)
 
--- Dynamic Preset Color Switcher Button
-local colorBtn
-colorBtn = createButton("Cycle Theme Color", Color3.fromRGB(18, 30, 52), function()
+createButton(VisualsPage, "Cycle Theme Color", Color3.fromRGB(18, 30, 52), function()
     currentColorIndex = (currentColorIndex % #colorPresets) + 1
     currentESPColor = colorPresets[currentColorIndex]
     
@@ -438,7 +505,16 @@ colorBtn = createButton("Cycle Theme Color", Color3.fromRGB(18, 30, 52), functio
     end
 end)
 
-createButton("Destroy UI & Exit", Color3.fromRGB(140, 30, 40), function()
+-- ═══ SETTINGS TAB CONTROLS ═══
+-- Toggle to show/hide the floating mobile button
+createToggle(SettingsPage, "Show Mobile Open Button", function(v)
+    OpenButton.Visible = v
+end)
+
+-- Default the mobile button toggle state to ON visually if wanted, or let user toggle it
+-- (Note: You can add an initial click if you want it defaulted to ON)
+
+createButton(SettingsPage, "Destroy UI & Exit", Color3.fromRGB(140, 30, 40), function()
     if _G.HubCleanup then
         _G.HubCleanup()
     end
@@ -465,4 +541,4 @@ _G.HubCleanup = function()
     _G.HubCleanup = nil
 end
 
-print("ZERTZ ESP Ultra Custom UI Active!")
+print("ZERTZ ESP Moondiety Theme Loaded Successfully!")
