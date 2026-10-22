@@ -138,29 +138,33 @@ connections.render = RunService.RenderStepped:Connect(function()
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
                     if onScreen then
-                        -- 2D Box Calculation
+                        -- 2D Box Calculation (Fixed Feet to Head bounds)
                         if boxEnabled and espEnabled then
-                            local head = char:FindFirstChild("Head")
-                            if head then
-                                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                                local legPos = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
-                                local height = math.abs(headPos.Y - legPos.Y)
-                                local width = height / 1.5
-                                
-                                data.Box.Size = Vector2.new(width, height)
-                                data.Box.Position = Vector2.new(screenPos.X - width / 2, screenPos.Y - height / 2)
-                                data.Box.Visible = true
-                            else
-                                data.Box.Visible = false
-                            end
+                            -- World coordinates for Top of Head (+2.5 studs) and Feet (-3.5 studs)
+                            local headWorld = rootPart.Position + Vector3.new(0, 2.5, 0)
+                            local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
+                            
+                            local headScreen = Camera:WorldToViewportPoint(headWorld)
+                            local feetScreen = Camera:WorldToViewportPoint(feetWorld)
+                            
+                            local height = math.abs(headScreen.Y - feetScreen.Y)
+                            local width = height / 1.5
+                            
+                            -- Position the Box precisely centered over the bounds
+                            data.Box.Size = Vector2.new(width, height)
+                            data.Box.Position = Vector2.new(headScreen.X - (width / 2), headScreen.Y)
+                            data.Box.Visible = true
                         else
                             data.Box.Visible = false
                         end
 
-                        -- Tracers
+                        -- Tracers (Points from bottom of screen to feet)
                         if tracersEnabled and espEnabled then
+                            local feetWorld = rootPart.Position - Vector3.new(0, 3.5, 0)
+                            local feetScreen = Camera:WorldToViewportPoint(feetWorld)
+                            
                             data.Tracer.From = bottomCenter
-                            data.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                            data.Tracer.To = Vector2.new(feetScreen.X, feetScreen.Y)
                             data.Tracer.Visible = true
                         else
                             data.Tracer.Visible = false
